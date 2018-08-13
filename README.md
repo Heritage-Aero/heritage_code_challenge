@@ -24,7 +24,7 @@ Write the contract(s) to manage the inventory of a book library.
 * npm
 
 ## Submission
-1. Submit a pull request to this github repository to the correct branch.
+1. Submit a pull request to this github repository to the applications branch.
 2. Structure the project such that:
 `$ npm install`
 Installs the project dependencies from a valid package.json
@@ -34,12 +34,6 @@ Runs/Launches/Deploys the project
 Executes unit tests
 3. A valid Readme.md with valid markup that describes the project, installation and launch.
 
-
 ## Bonus
 1. AutoGen/Doxygen GitPages documentation
 2. Web3 front end.
-3. Token/Fund transfer to sell old books.
-
-
-
-
