@@ -4,6 +4,12 @@ const truffleAssert = require('truffle-assertions')
 
 contract('Library tests', async (accounts) => {
   let libraryData, libraryApp
+  const book = {
+    title: 'Test',
+    author: 'Gry0u',
+    publishedDate: Math.floor(Date.now() / 1000),
+    originLibrarian: 'Library'
+  }
 
   before('setup contract', async () => {
     libraryData = await LibraryData.deployed()
@@ -76,6 +82,55 @@ contract('Library tests', async (accounts) => {
       'Membership event not correctly emitted'
     )
   })
+
+  it('Librarians may add books to the library', async () => {
+    // add back librarian
+    await libraryApp.setMembership(accounts[1], true)
+    const tx = await libraryApp.insertBook(
+      book.title,
+      book.author,
+      book.publishedDate,
+      { from: accounts[1] }
+    )
+    const bookKey = await libraryData.getBookKey(book.title, book.author, book.publishedDate)
+    assert(await libraryData.isBook(bookKey), 'Book was not added correctly')
+    truffleAssert.eventEmitted(
+      tx,
+      'BookAdded',
+      ev => {
+        return ev.title == book.title &
+        ev.author == book.author &
+        ev.publishedDate == book.publishedDate &
+        ev.originLibrarian == accounts[1]
+      },
+      'BookAdded event not emitted correctly'
+    )
+  })
+
+  it('Librarians may remove books from the library', async () => {
+    const tx = await libraryApp.deleteBook(
+      book.title,
+      book.author,
+      book.publishedDate,
+      { from: accounts[1] }
+    )
+    const bookKey = await libraryData.getBookKey(book.title, book.author, book.publishedDate)
+    assert.equal(
+      await libraryData.isBook(bookKey),
+      false,
+      'Book was not deleted correctly'
+    )
+    truffleAssert.eventEmitted(
+      tx,
+      'BookDeleted',
+      ev => {
+        return ev.title == book.title &
+        ev.author == book.author &
+        ev.publishedDate == book.publishedDate
+      },
+      'BookDeleted event not emitted correctly'
+    )
+  })
 /*
   it('Only librarians may check books out to an address', async () => {
 
@@ -89,13 +144,7 @@ contract('Library tests', async (accounts) => {
 
   })
 
-  it('Librarians may add books from the library', async () => {
 
-  })
-
-  it('Librarians may remove books from the library', async () => {
-
-  })
 
   it("Track the history of a book's ownership", async () => {
 

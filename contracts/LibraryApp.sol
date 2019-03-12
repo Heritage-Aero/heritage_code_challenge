@@ -5,6 +5,17 @@ import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 // Interface contract
 interface LibraryData {
     function setMembership(address librarian, bool add) external;
+
+    function insertBook(
+        string calldata author,
+        string calldata title,
+        uint publishedDate,
+        address originLibrarian
+    )
+    external returns(uint);
+
+    function deleteBook(bytes32 bookKey) external returns (uint);
+
     function libraryOwner() external view returns(address);
     function isRegistered(address librarian) external view returns(bool);
 }
@@ -19,6 +30,8 @@ contract LibraryApp {
     bool public operational = false;
     // ----------------- EVENTS
     event Membership(address librarian, bool added);
+    event BookAdded(string title, string author, uint publishedDate, address originLibrarian);
+    event BookDeleted(string title, string author, uint publishedDate);
     // ---------------- CONSTRUCTOR
     constructor (address libraryDataAddress) public {
         operational = true;
@@ -64,15 +77,35 @@ contract LibraryApp {
     }
 
     // Check is a librarian is registered
-    modifier isRegistered(address librarian) {
+    modifier isLibrarian() {
         require(
-            libraryData.isRegistered(librarian),
+            libraryData.isRegistered(msg.sender),
             "Must be registered as librarian to perform this action"
         );
         _;
     }
 
+    // modifier isNotBookOwner(address reader) {
+    //     require(
+    //         libraryData.isRegistered(librarian),
+    //         "Must be registered as librarian to perform this action"
+    //     );
+    //     _;
+    // }
+
     // ----------------- HELPERS FUNCTIONS
+    function getBookKey
+    (
+        string memory title,
+        string memory author,
+        uint publishedDate
+    )
+    public
+    pure
+    returns(bytes32 bookKey)
+    {
+        bookKey = keccak256(abi.encodePacked(title, author, publishedDate));
+    }
 
     // ----------------- SMART CONTRACT FUNCTIONS
     function setMembership(address librarian, bool add)
@@ -84,5 +117,47 @@ contract LibraryApp {
         libraryData.setMembership(librarian, add);
         emit Membership(librarian, add);
     }
+
+    function insertBook
+    (
+        string calldata title,
+        string calldata author,
+        uint publishedDate
+    )
+    external
+    isOperational
+    isLibrarian
+    {
+        libraryData.insertBook(title, author, publishedDate, msg.sender);
+        emit BookAdded(title, author, publishedDate, msg.sender);
+    }
+
+    function deleteBook
+    (
+        string calldata title,
+        string calldata author,
+        uint publishedDate
+    )
+    external
+    isOperational
+    isLibrarian
+    {
+        bytes32 bookKey = getBookKey(title, author, publishedDate);
+        libraryData.deleteBook(bookKey);
+        emit BookDeleted(title, author, publishedDate);
+    }
+
+    // function getBook
+    // (
+    //
+    // )
+
+    // function checkBookToAddress(address reader)
+    // isLibraryOwner
+    // isOperational
+    // isNotBookOwner
+    // {
+    //
+    // }
 
 }

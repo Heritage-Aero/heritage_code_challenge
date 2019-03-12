@@ -14,21 +14,24 @@ contract LibraryData {
         string title;
         string author;
         uint publishedDate;
+        address originLibrarian;
         address currentOwner;
         address[] previousOwners;
         // notes will be used to track repairs and damages
         string[] notes;
         // ownerships will be used to count the number of successive owners
         uint ownerships;
+        uint index;
         // price?
         // uint price;
     }
 
     /* Track all books in library
-    key = hash(title, author, publishedDate)
+    key = hash(title, author, publishedDate) with a CRUD pattern
+    https://medium.com/@robhitchens/solidity-crud-part-1-824ffa69509a
     */
-    mapping(bytes32 => Book) public lib;
-
+    mapping(bytes32 => Book) public books;
+    bytes32[] bookKeys;
 
     // Contract operational status control
     bool public operational = false;
@@ -96,6 +99,28 @@ contract LibraryData {
         registered = librarians[librarian];
     }
 
+    function getBookKey
+    (
+        string memory title,
+        string memory author,
+        uint publishedDate
+    )
+    public
+    pure
+    returns(bytes32 bookKey)
+    {
+        bookKey = keccak256(abi.encodePacked(title, author, publishedDate));
+    }
+
+    function isBook(bytes32 bookKey)
+    public
+    view
+    returns(bool isIndeed)
+    {
+        if (bookKeys.length == 0) return false;
+        return (bookKeys[books[bookKey].index] == bookKey);
+    }
+
     // ----------------- SMART CONTRACT CORE FUNCTIONS
     // Add or remove (depending on add arg)
     function setMembership(address librarian, bool add)
@@ -105,4 +130,53 @@ contract LibraryData {
     {
         librarians[librarian] = add;
     }
+
+    function insertBook
+    (
+        string calldata author,
+        string calldata title,
+        uint publishedDate,
+        address originLibrarian
+    )
+    external
+    callerAuthorized
+    isOperational
+    returns (uint index)
+    {
+        // Generate book key
+        bytes32 bookKey = getBookKey(author, title, publishedDate);
+        // Check if exists
+        require(!isBook(bookKey), "This book already exists");
+        // Insert book in collection
+        books[bookKey].author = author;
+        books[bookKey].title = title;
+        books[bookKey].publishedDate = publishedDate;
+        books[bookKey].originLibrarian = originLibrarian;
+        books[bookKey].index = bookKeys.push(bookKey)-1;
+        index = bookKeys.length-1;
+    }
+
+    // Very smart delete pattern from:
+    // https://medium.com/@robhitchens/solidity-crud-part-2-ed8d8b4f74ec
+    function deleteBook(bytes32 bookKey)
+    external
+    callerAuthorized
+    isOperational
+    returns (uint index)
+    {
+        require(isBook(bookKey), "This book is not in the library");
+        // get key of book to delete
+        uint indexBookToDelete = books[bookKey].index;
+        /* move book in last position of the index into the position
+        of the book to be deleted
+        */
+        bytes32 fillBookKey =  bookKeys[bookKeys.length - 1];
+        bookKeys[indexBookToDelete] = fillBookKey;
+        // Update replacement book index
+        books[fillBookKey].index = indexBookToDelete;
+        // delete last book of the index
+        index = bookKeys.length--;
+
+    }
+
 }
