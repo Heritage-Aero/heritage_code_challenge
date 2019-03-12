@@ -133,7 +133,7 @@ contract LibraryData {
     }
 
     function getBookOwner(bytes32 bookKey)
-    external
+    public
     view
     returns (address bookOwner)
     {
@@ -141,7 +141,7 @@ contract LibraryData {
     }
 
     function getBookOriginLibrarian(bytes32 bookKey)
-    external
+    public
     view
     returns (address librarian)
     {
@@ -185,6 +185,15 @@ contract LibraryData {
         fromAddress = books[bookKey].transfers[index].from;
         notesTransfer = books[bookKey].transfers[index].notes;
     }
+
+    function getTransfersCount(bytes32 bookKey)
+    external
+    view
+    returns (uint num)
+    {
+        num = books[bookKey].transfersCount;
+    }
+
     // ----------------- SMART CONTRACT CORE FUNCTIONS
     // Add or remove (depending on add arg)
     function setMembership(address librarian, bool add)

@@ -216,20 +216,31 @@ contract('Library tests', async (accounts) => {
 
   })
 
-/*
+  it('Can get/view a book', async () => {
+    const {
+      originLibrarian,
+      currentOwner,
+      checkedOut,
+      transfersCount,
+      lastTransferFrom,
+      lastTransferNotes
+    } = await libraryApp.getBook(
+      book.title,
+      book.author,
+      book.publishedDate
+    )
+    assert.equal(originLibrarian, accounts[1], 'Wrong originLibrarian')
+    assert.equal(currentOwner, accounts[1], 'Wrong currentOwner')
+    assert(!checkedOut, 'Wrong checkedOut status')
+    assert.equal(transfersCount, 2, 'Wrong transfers count')
+    assert.equal(lastTransferFrom, accounts[4], 'Wrong from last transfer')
+    assert.equal(lastTransferNotes, 'Stains on back cover', 'Wrong last notes')
+
+  })
+  /*
   it('A book owner may trade the book to anyone else', async => {
 
   })
 
-
-
-
-  it("Track the history of a book's ownership", async () => {
-
-  })
-
-  it('Record damage or repair (notes) for a book', async () => {
-
-  })
   */
 })

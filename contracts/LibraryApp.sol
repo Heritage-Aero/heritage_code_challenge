@@ -36,10 +36,13 @@ interface LibraryData {
 
     function getBookOriginLibrarian(bytes32 bookKey)
     external
+    view
     returns (address);
 
     function isBook(bytes32 bookKey) external view returns(bool);
     function isCheckedOut(bytes32 bookKey) external view returns (bool);
+    function getTransfer(bytes32 bookKey, uint index) external view returns (address from, string memory notes);
+    function getTransfersCount(bytes32 bookKey) external view returns (uint);
 }
 
 
@@ -242,10 +245,37 @@ contract LibraryApp {
 
     }
 
-    // function getBook
-    // (
-    //
-    // )
+    function getBook
+    (
+        string calldata title,
+        string calldata author,
+        uint publishedDate
+    )
+    external
+    view
+    returns
+    (
+        string memory _title,
+        string memory _author,
+        uint _publishedDate,
+        address originLibrarian,
+        address currentOwner,
+        bool checkedOut,
+        uint transfersCount,
+        address lastTransferFrom,
+        string memory lastTransferNotes
+    )
+    {
+        bytes32 bookKey = getBookKey(title, author, publishedDate);
+        _title = title;
+        _author = author;
+        _publishedDate = publishedDate;
+        originLibrarian = libraryData.getBookOriginLibrarian(bookKey);
+        currentOwner = libraryData.getBookOwner(bookKey);
+        checkedOut = libraryData.isCheckedOut(bookKey);
+        transfersCount = libraryData.getTransfersCount(bookKey);
+        (lastTransferFrom, lastTransferNotes) = libraryData.getTransfer(bookKey, transfersCount.sub(1));
+    }
 
 
 }
