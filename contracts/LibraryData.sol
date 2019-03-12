@@ -16,6 +16,7 @@ contract LibraryData {
         uint publishedDate;
         address originLibrarian;
         address currentOwner;
+        bool checkedOut;
         address[] previousOwners;
         // notes will be used to track repairs and damages
         string[] notes;
@@ -121,6 +122,13 @@ contract LibraryData {
         return (bookKeys[books[bookKey].index] == bookKey);
     }
 
+    function getBookOwner(bytes32 bookKey)
+    external
+    view
+    returns (address bookOwner)
+    {
+        bookOwner = books[bookKey].currentOwner;
+    }
     // ----------------- SMART CONTRACT CORE FUNCTIONS
     // Add or remove (depending on add arg)
     function setMembership(address librarian, bool add)
@@ -177,6 +185,16 @@ contract LibraryData {
         // delete last book of the index
         index = bookKeys.length--;
 
+    }
+
+    function checkOutBook(address borrower, bytes32 bookKey)
+    external
+    callerAuthorized
+    isOperational
+    {
+        require(isBook(bookKey), "This book is not in the library");
+        books[bookKey].checkedOut = true;
+        books[bookKey].currentOwner = borrower;
     }
 
 }

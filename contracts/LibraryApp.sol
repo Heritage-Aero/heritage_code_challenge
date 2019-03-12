@@ -16,8 +16,14 @@ interface LibraryData {
 
     function deleteBook(bytes32 bookKey) external returns (uint);
 
+    function checkOutBook(address borrower, bytes32 bookKey) external;
     function libraryOwner() external view returns(address);
     function isRegistered(address librarian) external view returns(bool);
+
+    function getBookOwner(bytes32 bookKey)
+    external
+    view
+    returns (address);
 }
 
 
@@ -32,6 +38,13 @@ contract LibraryApp {
     event Membership(address librarian, bool added);
     event BookAdded(string title, string author, uint publishedDate, address originLibrarian);
     event BookDeleted(string title, string author, uint publishedDate);
+
+    event BookCheckedOut(
+        address borrower,
+        string author,
+        string title,
+        uint publishedDate);
+
     // ---------------- CONSTRUCTOR
     constructor (address libraryDataAddress) public {
         operational = true;
@@ -84,14 +97,6 @@ contract LibraryApp {
         );
         _;
     }
-
-    // modifier isNotBookOwner(address reader) {
-    //     require(
-    //         libraryData.isRegistered(librarian),
-    //         "Must be registered as librarian to perform this action"
-    //     );
-    //     _;
-    // }
 
     // ----------------- HELPERS FUNCTIONS
     function getBookKey
@@ -147,17 +152,35 @@ contract LibraryApp {
         emit BookDeleted(title, author, publishedDate);
     }
 
+    function checkOutBook
+    (
+        address borrower,
+        string calldata title,
+        string calldata author,
+        uint publishedDate
+    )
+    external
+    isLibrarian
+    isOperational
+    {
+        bytes32 bookKey = getBookKey(title, author, publishedDate);
+        require(
+            libraryData.getBookOwner(bookKey) != borrower,
+            "This person already has this book"
+        );
+        libraryData.checkOutBook(borrower, bookKey);
+        emit BookCheckedOut(
+            borrower,
+            title,
+            author,
+            publishedDate
+        );
+    }
+
     // function getBook
     // (
     //
     // )
 
-    // function checkBookToAddress(address reader)
-    // isLibraryOwner
-    // isOperational
-    // isNotBookOwner
-    // {
-    //
-    // }
 
 }

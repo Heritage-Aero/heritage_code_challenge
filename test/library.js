@@ -131,11 +131,53 @@ contract('Library tests', async (accounts) => {
       'BookDeleted event not emitted correctly'
     )
   })
-/*
-  it('Only librarians may check books out to an address', async () => {
 
+  it('Only librarians may check books out to an address', async () => {
+    // re insert book
+    await libraryApp.insertBook(
+      book.title,
+      book.author,
+      book.publishedDate,
+      { from: accounts[1] }
+    )
+    // address not regsitered as librarian fails to check out book
+    let fail = false
+    try {
+      await libraryApp.checkOutBook(
+        accounts[3],
+        book.title,
+        book.author,
+        book.publishedDate,
+        { from: accounts[2] }
+      )
+    } catch (error) {
+      fail = true
+    }
+    assert(fail, 'Book check out should have failed')
+
+    // check out book from a librarian address
+    const tx = await libraryApp.checkOutBook(
+      accounts[3],
+      book.title,
+      book.author,
+      book.publishedDate,
+      { from: accounts[1] }
+    )
+    const bookKey = await libraryData.getBookKey(book.title, book.author, book.publishedDate)
+    const _book = await libraryData.books.call(bookKey)
+    assert(_book.checkedOut, 'Book should be checked out')
+    assert.equal(_book.currentOwner, accounts[3], 'Wrong book owner')
+    truffleAssert.eventEmitted(
+      tx,
+      'BookCheckedOut',
+      ev => {
+        return ev.borrower == accounts[3]
+      },
+      'Event not emitted correctly'
+    )
   })
 
+/*
   it('A book owner may trade the book to anyone else', async => {
 
   })
