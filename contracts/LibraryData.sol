@@ -10,6 +10,19 @@ contract LibraryData {
     // To track registered librarians
     mapping(address => bool) public librarians;
 
+    // struct to check the history of the check In
+    struct Transfer {
+        /* who is transfering the book
+        library in case of check out
+        borrower in case of check in
+        */
+        address from;
+        // Describe the changed made to book e.g repair or damages
+        string notes;
+    }
+
+
+
     struct Book {
         string title;
         string author;
@@ -17,12 +30,9 @@ contract LibraryData {
         address originLibrarian;
         address currentOwner;
         bool checkedOut;
-        address[] previousOwners;
-        // notes will be used to track repairs and damages
-        string[] notes;
-        // ownerships will be used to count the number of successive owners
-        uint ownerships;
-        uint index;
+        uint index; // var used for CRUD pattern
+        Transfer[] transfers;
+        uint transfersCount;
         // price?
         // uint price;
     }
@@ -130,7 +140,7 @@ contract LibraryData {
         bookOwner = books[bookKey].currentOwner;
     }
 
-    function getBookOriginLibrary(bytes32 bookKey)
+    function getBookOriginLibrarian(bytes32 bookKey)
     external
     view
     returns (address librarian)
@@ -138,6 +148,43 @@ contract LibraryData {
         librarian = books[bookKey].originLibrarian;
     }
 
+    function isCheckedOut(bytes32 bookKey)
+    external
+    view
+    returns (bool out)
+    {
+        out = books[bookKey].checkedOut;
+    }
+
+    function recordTransfer
+    (
+        bytes32 bookKey,
+        address from,
+        string memory notes
+    )
+    internal
+    {
+        Transfer memory transfer = Transfer(from, notes);
+        books[bookKey].transfersCount = books[bookKey].transfers.push(transfer);
+    }
+
+    function getTransfer
+    (
+        bytes32 bookKey,
+        uint index
+    )
+    external
+    view
+    returns (address fromAddress, string memory notesTransfer)
+    {
+        require(isBook(bookKey), "This book does not exist");
+        require(
+            index <= books[bookKey].transfersCount,
+            "Index out of range"
+        );
+        fromAddress = books[bookKey].transfers[index].from;
+        notesTransfer = books[bookKey].transfers[index].notes;
+    }
     // ----------------- SMART CONTRACT CORE FUNCTIONS
     // Add or remove (depending on add arg)
     function setMembership(address librarian, bool add)
@@ -153,7 +200,7 @@ contract LibraryData {
         string calldata author,
         string calldata title,
         uint publishedDate,
-        address originLibrarian
+        address _originLibrarian
     )
     external
     callerAuthorized
@@ -162,16 +209,15 @@ contract LibraryData {
     {
         // Generate book key
         bytes32 bookKey = getBookKey(author, title, publishedDate);
-        // Check if exists
-        require(!isBook(bookKey), "This book already exists");
+
         // Insert book in collection
         books[bookKey].author = author;
         books[bookKey].title = title;
         books[bookKey].publishedDate = publishedDate;
-        books[bookKey].originLibrarian = originLibrarian;
-        books[bookKey].currentOwner = originLibrarian;
-        books[bookKey].index = bookKeys.push(bookKey)-1;
-        index = bookKeys.length-1;
+        books[bookKey].originLibrarian = _originLibrarian;
+        books[bookKey].currentOwner = _originLibrarian;
+        books[bookKey].index = bookKeys.push(bookKey).sub(1);
+        index = bookKeys.length.sub(1);
     }
 
     // Very smart delete pattern from:
@@ -182,13 +228,12 @@ contract LibraryData {
     isOperational
     returns (uint index)
     {
-        require(isBook(bookKey), "This book is not in the library");
         // get key of book to delete
         uint indexBookToDelete = books[bookKey].index;
         /* move book in last position of the index into the position
         of the book to be deleted
         */
-        bytes32 fillBookKey =  bookKeys[bookKeys.length - 1];
+        bytes32 fillBookKey =  bookKeys[bookKeys.length.sub(1)];
         bookKeys[indexBookToDelete] = fillBookKey;
         // Update replacement book index
         books[fillBookKey].index = indexBookToDelete;
@@ -197,23 +242,33 @@ contract LibraryData {
 
     }
 
-    function checkOutBook(address borrower, bytes32 bookKey)
+    function checkOutBook
+    (
+        address borrower,
+        bytes32 bookKey,
+        string calldata notes
+    )
     external
     callerAuthorized
     isOperational
     {
-        require(isBook(bookKey), "This book is not in the library");
         books[bookKey].checkedOut = true;
+        recordTransfer(bookKey, books[bookKey].currentOwner, notes);
         books[bookKey].currentOwner = borrower;
     }
 
-    function checkInBook(bytes32 bookKey)
+    function checkInBook
+    (
+        bytes32 bookKey,
+        string calldata notes,
+        address from
+    )
     external
     callerAuthorized
     isOperational
     {
-        require(isBook(bookKey), "This book is not in the library");
         books[bookKey].checkedOut = false;
+        recordTransfer(bookKey, from, notes);
         books[bookKey].currentOwner = books[bookKey].originLibrarian;
     }
 

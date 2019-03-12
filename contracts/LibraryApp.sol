@@ -16,8 +16,16 @@ interface LibraryData {
 
     function deleteBook(bytes32 bookKey) external returns (uint);
 
-    function checkOutBook(address borrower, bytes32 bookKey) external;
-    function checkInBook(bytes32 bookKey) external;
+    function checkOutBook(address borrower, bytes32 bookKey, string calldata notes) external;
+
+    function checkInBook
+    (
+        bytes32 bookKey,
+        string calldata notes,
+        address from
+    )
+    external;
+
     function libraryOwner() external view returns(address);
     function isRegistered(address librarian) external view returns(bool);
 
@@ -26,9 +34,12 @@ interface LibraryData {
     view
     returns (address);
 
-    function getBookOriginLibrary(bytes32 bookKey)
+    function getBookOriginLibrarian(bytes32 bookKey)
     external
     returns (address);
+
+    function isBook(bytes32 bookKey) external view returns(bool);
+    function isCheckedOut(bytes32 bookKey) external view returns (bool);
 }
 
 
@@ -53,7 +64,7 @@ contract LibraryApp {
         string title,
         string author,
         uint publishedDate,
-        address originLibrary);
+        address originLibrarian);
 
     // ---------------- CONSTRUCTOR
     constructor (address libraryDataAddress) public {
@@ -108,6 +119,16 @@ contract LibraryApp {
         _;
     }
 
+    modifier bookExists(
+        string memory title,
+        string memory author,
+        uint publishedDate
+    ) {
+        bytes32 bookKey = getBookKey(title, author, publishedDate);
+        require(libraryData.isBook(bookKey), "This book is not part of the library");
+        _;
+    }
+
     // ----------------- HELPERS FUNCTIONS
     function getBookKey
     (
@@ -156,6 +177,7 @@ contract LibraryApp {
     external
     isOperational
     isLibrarian
+    bookExists(title, author, publishedDate)
     {
         bytes32 bookKey = getBookKey(title, author, publishedDate);
         libraryData.deleteBook(bookKey);
@@ -167,18 +189,20 @@ contract LibraryApp {
         address borrower,
         string calldata title,
         string calldata author,
-        uint publishedDate
+        uint publishedDate,
+        string calldata notes
     )
     external
     isLibrarian
     isOperational
+    bookExists(title, author, publishedDate)
     {
         bytes32 bookKey = getBookKey(title, author, publishedDate);
         require(
-            libraryData.getBookOwner(bookKey) != borrower,
-            "This person already has this book"
+            !libraryData.isCheckedOut(bookKey),
+            "This book is already checked out"
         );
-        libraryData.checkOutBook(borrower, bookKey);
+        libraryData.checkOutBook(borrower, bookKey, notes);
         emit BookCheckedOut(
             borrower,
             title,
@@ -191,19 +215,29 @@ contract LibraryApp {
     (
         string calldata title,
         string calldata author,
-        uint publishedDate
+        uint publishedDate,
+        string calldata notes
     )
     external
     isOperational
+    bookExists(title, author, publishedDate)
     {
-        // anyone can check in a book so no specific checks
+        // anyone except librarians can check in books
+        require(
+            !libraryData.isRegistered(msg.sender),
+            "Librarians cannot bring back books"
+        );
         bytes32 bookKey = getBookKey(title, author, publishedDate);
-        libraryData.checkInBook(bookKey);
+        require(
+            libraryData.isCheckedOut(bookKey),
+            "This book is already checked in"
+        );
+        libraryData.checkInBook(bookKey, notes, msg.sender);
         emit BookCheckedIn(
             title,
             author,
             publishedDate,
-            libraryData.getBookOriginLibrary(bookKey)
+            libraryData.getBookOriginLibrarian(bookKey)
         );
 
     }

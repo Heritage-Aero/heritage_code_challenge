@@ -132,8 +132,8 @@ contract('Library tests', async (accounts) => {
     )
   })
 
-  it('Only librarians may check books out to an address', async () => {
-    // re insert book
+  it('Only librarians may check books out to an address. The transfer is recorded on the book. Note may be added', async () => {
+    // re add book to library
     await libraryApp.insertBook(
       book.title,
       book.author,
@@ -148,6 +148,7 @@ contract('Library tests', async (accounts) => {
         book.title,
         book.author,
         book.publishedDate,
+        "Scratch on cover",
         { from: accounts[2] }
       )
     } catch (error) {
@@ -161,12 +162,20 @@ contract('Library tests', async (accounts) => {
       book.title,
       book.author,
       book.publishedDate,
+      "Scratch on cover",
       { from: accounts[1] }
     )
+
+    // Assertions
     const bookKey = await libraryData.getBookKey(book.title, book.author, book.publishedDate)
     const _book = await libraryData.books.call(bookKey)
     assert(_book.checkedOut, 'Book should be checked out')
     assert.equal(_book.currentOwner, accounts[3], 'Wrong book owner')
+
+    const transfer = await libraryData.getTransfer(bookKey, 0)
+    assert.equal(transfer[0], accounts[1], "Wrong from property in book's transfer record")
+    assert.equal(transfer[1], 'Scratch on cover', "Wrong notes in book's transfer record")
+
     truffleAssert.eventEmitted(
       tx,
       'BookCheckedOut',
@@ -182,14 +191,31 @@ contract('Library tests', async (accounts) => {
       book.title,
       book.author,
       book.publishedDate,
+      'Stains on back cover',
       // test if other person than owner can check in
       { from: accounts[4] }
     )
+
     const bookKey = await libraryData.getBookKey(book.title, book.author, book.publishedDate)
     const _book = await libraryData.books.call(bookKey)
     assert.equal(_book.checkedOut, false, 'Book should be checked in')
     assert.equal(_book.currentOwner, _book.originLibrarian, 'Wrong book owner')
+
+    const transfer = await libraryData.getTransfer(bookKey, 1)
+    assert.equal(transfer[0], accounts[4], "Wrong from property in book's transfer record")
+    assert.equal(transfer[1], 'Stains on back cover', "Wrong notes in book's transfer record")
+
+    truffleAssert.eventEmitted(
+      tx,
+      'BookCheckedIn',
+      ev => {
+        return ev.originLibrarian == accounts[1]
+      },
+      'Event not emitted correctly'
+    )
+
   })
+
 /*
   it('A book owner may trade the book to anyone else', async => {
 
