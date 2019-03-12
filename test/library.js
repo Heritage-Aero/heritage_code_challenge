@@ -177,14 +177,24 @@ contract('Library tests', async (accounts) => {
     )
   })
 
+  it('Anyone may check in a book', async () => {
+    const tx = await libraryApp.checkInBook(
+      book.title,
+      book.author,
+      book.publishedDate,
+      // test if other person than owner can check in
+      { from: accounts[4] }
+    )
+    const bookKey = await libraryData.getBookKey(book.title, book.author, book.publishedDate)
+    const _book = await libraryData.books.call(bookKey)
+    assert.equal(_book.checkedOut, false, 'Book should be checked in')
+    assert.equal(_book.currentOwner, _book.originLibrarian, 'Wrong book owner')
+  })
 /*
   it('A book owner may trade the book to anyone else', async => {
 
   })
 
-  it('Anyone may check in a book', async () => {
-
-  })
 
 
 

@@ -17,12 +17,17 @@ interface LibraryData {
     function deleteBook(bytes32 bookKey) external returns (uint);
 
     function checkOutBook(address borrower, bytes32 bookKey) external;
+    function checkInBook(bytes32 bookKey) external;
     function libraryOwner() external view returns(address);
     function isRegistered(address librarian) external view returns(bool);
 
     function getBookOwner(bytes32 bookKey)
     external
     view
+    returns (address);
+
+    function getBookOriginLibrary(bytes32 bookKey)
+    external
     returns (address);
 }
 
@@ -44,6 +49,11 @@ contract LibraryApp {
         string author,
         string title,
         uint publishedDate);
+    event BookCheckedIn(
+        string title,
+        string author,
+        uint publishedDate,
+        address originLibrary);
 
     // ---------------- CONSTRUCTOR
     constructor (address libraryDataAddress) public {
@@ -175,6 +185,27 @@ contract LibraryApp {
             author,
             publishedDate
         );
+    }
+
+    function checkInBook
+    (
+        string calldata title,
+        string calldata author,
+        uint publishedDate
+    )
+    external
+    isOperational
+    {
+        // anyone can check in a book so no specific checks
+        bytes32 bookKey = getBookKey(title, author, publishedDate);
+        libraryData.checkInBook(bookKey);
+        emit BookCheckedIn(
+            title,
+            author,
+            publishedDate,
+            libraryData.getBookOriginLibrary(bookKey)
+        );
+
     }
 
     // function getBook

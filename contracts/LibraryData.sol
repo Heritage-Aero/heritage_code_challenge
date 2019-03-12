@@ -129,6 +129,15 @@ contract LibraryData {
     {
         bookOwner = books[bookKey].currentOwner;
     }
+
+    function getBookOriginLibrary(bytes32 bookKey)
+    external
+    view
+    returns (address librarian)
+    {
+        librarian = books[bookKey].originLibrarian;
+    }
+
     // ----------------- SMART CONTRACT CORE FUNCTIONS
     // Add or remove (depending on add arg)
     function setMembership(address librarian, bool add)
@@ -160,6 +169,7 @@ contract LibraryData {
         books[bookKey].title = title;
         books[bookKey].publishedDate = publishedDate;
         books[bookKey].originLibrarian = originLibrarian;
+        books[bookKey].currentOwner = originLibrarian;
         books[bookKey].index = bookKeys.push(bookKey)-1;
         index = bookKeys.length-1;
     }
@@ -195,6 +205,16 @@ contract LibraryData {
         require(isBook(bookKey), "This book is not in the library");
         books[bookKey].checkedOut = true;
         books[bookKey].currentOwner = borrower;
+    }
+
+    function checkInBook(bytes32 bookKey)
+    external
+    callerAuthorized
+    isOperational
+    {
+        require(isBook(bookKey), "This book is not in the library");
+        books[bookKey].checkedOut = false;
+        books[bookKey].currentOwner = books[bookKey].originLibrarian;
     }
 
 }
