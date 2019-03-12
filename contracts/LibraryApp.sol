@@ -15,10 +15,10 @@ contract LibraryApp {
 
     // ----------------- VARIABLES
     LibraryData libraryData;
-    address appOwner;
+    address public appOwner;
     bool public operational = false;
     // ----------------- EVENTS
-
+    event Membership(address librarian, bool added);
     // ---------------- CONSTRUCTOR
     constructor (address libraryDataAddress) public {
         operational = true;
@@ -82,6 +82,7 @@ contract LibraryApp {
     differentMembershipRequest(librarian, add)
     {
         libraryData.setMembership(librarian, add);
+        emit Membership(librarian, add);
     }
 
 }

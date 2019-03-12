@@ -5,7 +5,7 @@ contract LibraryData {
     using SafeMath for uint;
 
     // ----------------- VARIABLES
-    address private libraryOwner;
+    address public libraryOwner;
 
     // To track registered librarians
     mapping(address => bool) public librarians;
