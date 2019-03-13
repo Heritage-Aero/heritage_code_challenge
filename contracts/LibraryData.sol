@@ -33,8 +33,7 @@ contract LibraryData {
         uint index; // var used for CRUD pattern
         Transfer[] transfers;
         uint transfersCount;
-        // price?
-        // uint price;
+        uint salePrice;
     }
 
     /* Track all books in library
@@ -49,6 +48,9 @@ contract LibraryData {
 
     // Track authorized app contracts (upgradability requirement)
     mapping(address => bool) public authorizedCallers;
+
+    // withdrawals for books trades
+    mapping(address => uint) public withdrawals;
     // ----------------- EVENTS
 
     // ---------------- CONSTRUCTOR
@@ -194,6 +196,13 @@ contract LibraryData {
         num = books[bookKey].transfersCount;
     }
 
+    function getBookPrice(bytes32 bookKey)
+    external
+    view
+    returns (uint amount)
+    {
+        amount = books[bookKey].salePrice;
+    }
     // ----------------- SMART CONTRACT CORE FUNCTIONS
     // Add or remove (depending on add arg)
     function setMembership(address librarian, bool add)
@@ -281,4 +290,51 @@ contract LibraryData {
         books[bookKey].currentOwner = books[bookKey].originLibrarian;
     }
 
+    function sellBook
+    (
+        bytes32 bookKey,
+        uint price,
+        address seller,
+        string calldata notes
+
+    )
+    external
+    callerAuthorized
+    isOperational
+    {
+        books[bookKey].salePrice = price;
+        recordTransfer(bookKey, seller, notes);
+
+    }
+
+    function buyBook(
+        bytes32 bookKey,
+        address buyer
+    )
+    external
+    callerAuthorized
+    isOperational
+    payable
+    {
+        address seller = books[bookKey].currentOwner;
+        uint amount = books[bookKey].salePrice;
+        books[bookKey].salePrice = 0;
+
+        books[bookKey].currentOwner = buyer;
+        withdrawals[seller] += amount;
+    }
+
+    function withdraw(address payable recipient)
+    external
+    isOperational
+    {
+        // Check - interact - pattern to avoid re entrancy attack
+
+        // Checks (modifiers)
+        // Effect
+        uint amount = withdrawals[recipient];
+        withdrawals[recipient] = 0;
+        // Interact
+        recipient.transfer(amount);
+    }
 }

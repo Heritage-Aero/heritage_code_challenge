@@ -26,6 +26,18 @@ interface LibraryData {
     )
     external;
 
+    function sellBook
+    (
+        bytes32 bookKey,
+        uint price,
+        address seller,
+        string calldata notes
+    )
+    external;
+
+    function buyBook(bytes32 bookKey, address buyer) external payable;
+    function withdraw(address recipient) external;
+
     function libraryOwner() external view returns(address);
     function isRegistered(address librarian) external view returns(bool);
 
@@ -43,6 +55,7 @@ interface LibraryData {
     function isCheckedOut(bytes32 bookKey) external view returns (bool);
     function getTransfer(bytes32 bookKey, uint index) external view returns (address from, string memory notes);
     function getTransfersCount(bytes32 bookKey) external view returns (uint);
+    function getBookPrice(bytes32 bookKey) external view returns (uint);
 }
 
 
@@ -68,6 +81,19 @@ contract LibraryApp {
         string author,
         uint publishedDate,
         address originLibrarian);
+    event BookPutOnSale(
+        string title,
+        string author,
+        uint publishedDate,
+        uint price
+    );
+    event BookSold(
+        string title,
+        string author,
+        uint publishedDate,
+        uint price
+    );
+    event Paid(address recipient);
 
     // ---------------- CONSTRUCTOR
     constructor (address libraryDataAddress) public {
@@ -277,5 +303,65 @@ contract LibraryApp {
         (lastTransferFrom, lastTransferNotes) = libraryData.getTransfer(bookKey, transfersCount.sub(1));
     }
 
+    function sellBook
+    (
+        string calldata title,
+        string calldata author,
+        uint publishedDate,
+        uint price,
+        string calldata notes
+    )
+    external
+    bookExists(title, author, publishedDate)
+    isOperational
+    {
+        require(price > 0, "Sale price must be > 0");
+        bytes32 bookKey = getBookKey(title, author, publishedDate);
+        require(
+            libraryData.getBookOwner(bookKey) == msg.sender,
+            "You cannot sale a book you do not own"
+        );
+        libraryData.sellBook(bookKey, price, msg.sender, notes);
+        emit BookPutOnSale(
+            title,
+            author,
+            publishedDate,
+            price
+        );
+    }
+
+    function buyBook
+    (
+        string calldata title,
+        string calldata author,
+        uint publishedDate
+    )
+    external
+    isOperational
+    payable
+    {
+        bytes32 bookKey = getBookKey(title, author, publishedDate);
+        uint price = libraryData.getBookPrice(bookKey);
+        require(
+            libraryData.getBookPrice(bookKey) > 0,
+            "This book is not for sale"
+        );
+        require(msg.value >= price, "Funds sent do not cover the book price");
+
+        // refund if funds sent too high
+        uint amountToReturn = msg.value - price;
+        msg.sender.transfer(amountToReturn);
+
+        libraryData.buyBook(bookKey, msg.sender);
+        emit BookSold(title, author, publishedDate, price);
+    }
+
+    function withdraw()
+    external
+    isOperational
+    {
+        libraryData.withdraw(msg.sender);
+        emit Paid(msg.sender);
+    }
 
 }
