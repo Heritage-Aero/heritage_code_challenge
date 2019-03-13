@@ -30,10 +30,15 @@ For a given book, the view/get function returns all Book parameters but only the
 
 On top of these already specified requirements, I also fulfilled the following:  
 13. Separate contract data from app logic (`libraryData.sol` and `libraryApp.sol`) to ensure upgradability. In the case where business rules were to change, a new app contract would be deployed without modifying the data contract.  
-14. Operational control: set a boolean flag to stop the contracts in case something goes wrong.  
-15. Follow a CRUD pattern to manage books. [Credit Rob Hitchens](https://medium.com/@robhitchens/solidity-crud-part-2-ed8d8b4f74ec)
+14. Control which app contracts can call the data contract (`callerAuthorized` modifier).
+15. Operational control: set a boolean flag to stop the contracts in case something goes wrong.  
+16. Follow a CRUD pattern to manage books. [Credit Rob Hitchens](https://medium.com/@robhitchens/solidity-crud-part-2-ed8d8b4f74ec)
 
 ## Getting Started
 1. Clone repository
 2. Install dependencies: `npm install`
 3. Run tests: `npm run test`
+
+## Further development
+- Build front end (e.g with drizzle)
+- Make contract ready for prod (right now some variables were left with a public visibility to ease unit testing, which is not optimal).
