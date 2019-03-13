@@ -281,26 +281,26 @@ contract LibraryApp {
     view
     returns
     (
-        string memory _title,
-        string memory _author,
-        uint _publishedDate,
+        /* title, author and publishedDate are not returned:
+        they are already provided as params so they are well know
+        by the caller. Moreover otherwise CompileError: stack is too deep
+        */
         address originLibrarian,
         address currentOwner,
         bool checkedOut,
         uint transfersCount,
         address lastTransferFrom,
-        string memory lastTransferNotes
+        string memory lastTransferNotes,
+        uint price
     )
     {
         bytes32 bookKey = getBookKey(title, author, publishedDate);
-        _title = title;
-        _author = author;
-        _publishedDate = publishedDate;
         originLibrarian = libraryData.getBookOriginLibrarian(bookKey);
         currentOwner = libraryData.getBookOwner(bookKey);
         checkedOut = libraryData.isCheckedOut(bookKey);
         transfersCount = libraryData.getTransfersCount(bookKey);
         (lastTransferFrom, lastTransferNotes) = libraryData.getTransfer(bookKey, transfersCount.sub(1));
+        price = libraryData.getBookPrice(bookKey);
     }
 
     function sellBook
@@ -352,7 +352,7 @@ contract LibraryApp {
         uint amountToReturn = msg.value - price;
         msg.sender.transfer(amountToReturn);
 
-        libraryData.buyBook(bookKey, msg.sender);
+        libraryData.buyBook.value(msg.value)(bookKey, msg.sender);
         emit BookSold(title, author, publishedDate, price);
     }
 

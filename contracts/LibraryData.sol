@@ -327,14 +327,10 @@ contract LibraryData {
     function withdraw(address payable recipient)
     external
     isOperational
+    callerAuthorized
     {
-        // Check - interact - pattern to avoid re entrancy attack
-
-        // Checks (modifiers)
-        // Effect
         uint amount = withdrawals[recipient];
         withdrawals[recipient] = 0;
-        // Interact
         recipient.transfer(amount);
     }
 }

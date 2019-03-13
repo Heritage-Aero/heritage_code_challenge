@@ -237,10 +237,85 @@ contract('Library tests', async (accounts) => {
     assert.equal(lastTransferNotes, 'Stains on back cover', 'Wrong last notes')
 
   })
-  /*
-  it('A book owner may trade the book to anyone else', async => {
 
+  it('(trade) A book owner can put his book on sale', async () => {
+    // owner (here the librarian account[1]) puts book for sale
+    const _price = web3.utils.toWei('1', 'ether')
+    const tx = await libraryApp.sellBook(
+      book.title,
+      book.author,
+      book.publishedDate,
+      web3.utils.toWei('1', 'ether'),
+      'Stains removed before sale',
+      { from: accounts[1] }
+    )
+
+    // assertions
+    const {
+      price,
+      lastTransferFrom,
+      lastTransferNotes
+    } = await libraryApp.getBook(
+      book.title,
+      book.author,
+      book.publishedDate
+    )
+
+    assert.equal(lastTransferNotes, 'Stains removed before sale', 'Wrong notes attribute')
+    assert.equal(lastTransferFrom, accounts[1], 'From from attribute in last transfer record')
+    assert.equal(_price, +price, 'Wrong sale price')
+
+    truffleAssert.eventEmitted(tx, 'BookPutOnSale', ev => {
+      return ev.title == book.title & +ev.price == _price
+    }, 'Event not emitted correctly')
   })
 
-  */
+  it('(trade) Anyone can buy a book put on sale', async () => {
+    // account 3 buys book
+    const _price = web3.utils.toWei('1', 'ether')
+    const balanceBefore = await web3.eth.getBalance(accounts[3])
+    const tx = await libraryApp.buyBook(
+      book.title,
+      book.author,
+      book.publishedDate,
+      { from: accounts[3], value: _price, gasPrice: 0 }
+    )
+    const balanceAfter = await web3.eth.getBalance(accounts[3])
+    const {
+      price,
+      currentOwner
+    } = await libraryApp.getBook(
+      book.title,
+      book.author,
+      book.publishedDate
+    )
+    const withdrawal = await libraryData.withdrawals.call(accounts[1])
+
+    assert.equal(+balanceBefore - _price, +balanceAfter, "Buyer's balance didn't decrease")
+    assert.equal(withdrawal, web3.utils.toWei('1', 'ether'), 'Wrong credited amount')
+    assert.equal(+price, 0, 'Wrong sale price (should be back to 0)')
+    assert.equal(currentOwner, accounts[3], 'Wrong current owner')
+    assert
+
+    truffleAssert.eventEmitted(tx, 'BookSold', ev => {
+      return ev.title == book.title & +ev.price == _price
+    }, 'Wrong event emitted')
+  })
+
+  it('(trade) After a sale, a seller can withdraw his/her credited amount', async () => {
+    const balanceBefore = await web3.eth.getBalance(accounts[1])
+    const tx = await libraryApp.withdraw({
+      from: accounts[1],
+      gasPrice: 0
+    })
+    const balanceAfter = await web3.eth.getBalance(accounts[1])
+
+    assert.equal(
+      +balanceBefore + +web3.utils.toWei('1', 'ether'), +balanceAfter,
+      'Withdrawal unsecessful'
+    )
+    truffleAssert.eventEmitted(tx, 'Paid', ev => {
+      return ev.recipient == accounts[1]
+    }, 'Wrong event emitted')
+  })
 })
