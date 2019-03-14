@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import ReadOpStatus from './ReadOpStatus'
-import SetOpStatus from './SetOpStatus'
+import ToggleStatus from './ToggleStatus'
 import logo from './logo.svg'
 import './App.css'
 
@@ -35,7 +35,7 @@ class App extends Component {
           drizzle={this.props.drizzle}
           drizzleState={this.state.drizzleState}
         />
-        <SetOpStatus
+        <ToggleStatus
           drizzle={this.props.drizzle}
           drizzleState={this.state.drizzleState}
         />

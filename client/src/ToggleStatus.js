@@ -1,24 +1,28 @@
 import React from "react";
 
-class SetOpStatus extends React.Component {
-  state = { stackId: null };
+class ToggleStatus extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { stackId: null, isOn: true };
+  }
 
   handleClick = () => {
     // if the button is click, toggle the operational status to false
-    this.setToFalse();
+    this.toggle();
   }
 
-  setToFalse = () => {
+  toggle = () => {
     const { drizzle, drizzleState } = this.props
     const contract = drizzle.contracts.LibraryApp
 
     // let drizzle know we want to call the `setOperationalStatus` method
-    const stackId = contract.methods["setOperatingStatus"].cacheSend(false, {
-      from: drizzleState.accounts[0]
-    })
+    const stackId = contract.methods["setOperatingStatus"].cacheSend(
+      !this.state.isOn,
+      { from: drizzleState.accounts[0] }
+    )
 
     // save the `stackId` for later reference
-    this.setState({ stackId })
+    this.setState(state => ({ stackId: stackId, isOn: !state.isOn }))
   }
 
   getTxStatus = () => {
@@ -37,13 +41,22 @@ class SetOpStatus extends React.Component {
 
   render() {
     return (
-      <div>
-        <button onClick={this.handleClick}>False
-        </button>
-        <div>{this.getTxStatus()}</div>
+      <div className="onoffswitch">
+        <input
+          type="checkbox"
+          name="onoffswitch"
+          className="onoffswitch-checkbox"
+          id="myonoffswitch"
+          checked={this.state.isOn}
+          onChange={this.handleClick}
+        />
+        <label className="onoffswitch-label" htmlFor="myonoffswitch">
+          <span className="onoffswitch-inner"></span>
+          <span className="onoffswitch-switch"></span>
+        </label>
       </div>
     )
   }
 }
 
-export default SetOpStatus
+export default ToggleStatus
