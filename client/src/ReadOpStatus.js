@@ -19,7 +19,6 @@ class ReadOpStatus extends React.Component {
     const { LibraryApp } = this.props.drizzleState.contracts
 
     // using the saved `dataKey`, get the variable we're interested in
-    console.log(LibraryApp)
     const operational = LibraryApp.operational[this.state.dataKey]
 
     // if it exists, then we display its value
