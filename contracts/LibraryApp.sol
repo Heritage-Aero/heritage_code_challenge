@@ -173,6 +173,14 @@ contract LibraryApp {
     }
 
     // ----------------- SMART CONTRACT FUNCTIONS
+    function setOperatingStatus(bool mode)
+    external
+    isAppOwner
+    differentModeRequest(mode)
+    {
+        operational = mode;
+    }
+
     function setMembership(address librarian, bool add)
     external
     isLibraryOwner
